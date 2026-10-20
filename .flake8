@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 119
+exclude = .git, .venv, __pycache__
+per-file-ignores =
+    src/__init__.py: F401
+    tests/__init__.py: F401
