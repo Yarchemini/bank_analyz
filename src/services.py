@@ -98,3 +98,23 @@ def search_by_phone(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             result.append(tx)
 
     return result
+
+def search_transfers_to_individuals(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Находит транзакции по переводам физлицам.
+
+    Категория должна быть строго 'Переводы', а в описании — Имя и первая буква Фамилии с точкой.
+    """
+    result = []
+    # Регулярка ищет паттерны типа 'Валерий А.', 'Сергей З.', 'Артем П.'
+    # Учитываем, что перед именем может быть любой текст (например, 'Константин Л.')
+    name_pattern = re.compile(r'\b[А-ЯA-Z][а-яa-z]+\s+[А-ЯA-Z]\.')
+
+    for tx in transactions:
+        category = str(tx.get("Категория") or tx.get("category", "")).strip()
+        description = str(tx.get("Описание") or tx.get("description", "")).strip()
+
+        if category.lower() == "переводы":
+            if name_pattern.search(description):
+                result.append(tx)
+
+    return result
