@@ -1,53 +1,56 @@
-from datetime import datetime
 import json
 import os
 
-from src.services import get_profitable_cashback_categories, investment_bank
+from src.services import search_by_phone, simple_search
 from src.utils import load_operations_from_excel
-from src.views import generate_main_page_data
+from src.views import generate_events_page_data, generate_main_page_data
 
 
 def main() -> None:
     """Основная функция приложения.
 
-    Связывает чтение данных, генерацию главной страницы и аналитические сервисы.
+    Связывает чтение данных, генерацию страниц и аналитические сервисы.
     """
-    # Определяем базовые пути (работает и у тебя в prj, и у Матвея в Pythin)
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     excel_path = os.path.join(base_dir, "data", "operations.xlsx")
     settings_path = os.path.join(base_dir, "user_settings.json")
 
-    print("=== Запуск анализатора транзакций ===")
+    print("=== ЗАПУСК БАНКОВСКОГО АНАЛИЗАТОРА ===")
 
-    # 1. Вызываем изолированное чтение данных из utils
+    # 1. Загрузка данных
     transactions = load_operations_from_excel(excel_path)
-    print(f"Загружено транзакций из Excel: {len(transactions)}")
+    print(f"[Успех] Загружено транзакций из Excel: {len(transactions)}")
 
-    # Задаем тестовую дату для генерации (например, май 2020 года, как в ТЗ)
-    test_date_str = "2020-05-20 14:00:00"
+    # Задаем базовую дату для тестов (например, декабрь 2021, как в вашем файле)
+    test_date_str = "2021-12-31 18:00:00"
 
-    # 2. Логика веб-страницы 'Главная' из views
     try:
         with open(settings_path, "r", encoding="utf-8") as f:
             settings = json.load(f)
-    except Exception:
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
         settings = {"user_currencies": ["USD", "EUR"], "user_stocks": ["AAPL", "AMZN"]}
 
     currencies = settings.get("user_currencies", [])
     stocks = settings.get("user_stocks", [])
 
-    print("\n--- Генерация данных для Главной страницы ---")
+    # 2. Тест Главной страницы
+    print("\n--- [Генерация] Главная страница ---")
     main_page_json = generate_main_page_data(test_date_str, transactions, currencies, stocks)
-    print(main_page_json)
+    print(main_page_json[:1000] + "\n... (вывод обрезан) ...")
 
-    # 3. Работа сервисов из services
-    print("\n--- Тестирование сервиса 'Инвесткопилка' ---")
-    saved_money = investment_bank("2020-05", transactions, limit=50)
-    print(f"За май 2020 при округлении до 50 руб. удалось бы скопить: {saved_money} руб.")
+    # 3. Тест страницы События
+    print("\n--- [Генерация] Страница 'События' (Диапазон: Месяц) ---")
+    events_page_json = generate_events_page_data(test_date_str, transactions, currencies, stocks, range_type="M")
+    print(events_page_json[:1000] + "\n... (вывод обрезан) ...")
 
-    print("\n--- Тестирование сервиса 'Выгодный кэшбэк' ---")
-    cashback_json = get_profitable_cashback_categories(transactions, 2020, 5)
-    print(cashback_json)
+    # 4. Тест сервисов поиска
+    print("\n--- [Сервис] Простой поиск по запросу 'Супермаркеты' ---")
+    search_res = simple_search("Супермаркеты", transactions)
+    print(f"Найдено транзакций: {len(search_res)}")
+
+    print("\n--- [Сервис] Поиск транзакций с телефонными номерами ---")
+    phone_res = search_by_phone(transactions)
+    print(f"Найдено транзакций с телефонами в описании: {len(phone_res)}")
 
 
 if __name__ == "__main__":
