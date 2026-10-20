@@ -60,7 +60,10 @@ def simple_search(query: str, transactions: List[Dict[str, Any]]) -> str:
         category = str(tx.get("Категория") or tx.get("category", "")).lower()
         description = str(tx.get("Описание") or tx.get("description", "")).lower()
         if search_query in category or search_query in description:
-            result.append(tx)
+            # Делаем копию словаря, чтобы не ломать исходный список транзакций
+            clean_tx = tx.copy()
+            clean_tx.pop("_parsed_dt", None)  # Вышвыриваем datetime объект, ломающий json.dumps
+            result.append(clean_tx)
     return json.dumps(result, ensure_ascii=False, indent=4)
 
 
@@ -71,7 +74,9 @@ def search_by_phone(transactions: List[Dict[str, Any]]) -> str:
     for tx in transactions:
         description = str(tx.get("Описание") or tx.get("description", ""))
         if phone_pattern.search(description):
-            result.append(tx)
+            clean_tx = tx.copy()
+            clean_tx.pop("_parsed_dt", None)
+            result.append(clean_tx)
     return json.dumps(result, ensure_ascii=False, indent=4)
 
 
@@ -83,5 +88,7 @@ def search_transfers_to_individuals(transactions: List[Dict[str, Any]]) -> str:
         category = str(tx.get("Категория") or tx.get("category", "")).strip()
         description = str(tx.get("Описание") or tx.get("description", ""))
         if category.lower() == "переводы" and name_pattern.search(description):
-            result.append(tx)
+            clean_tx = tx.copy()
+            clean_tx.pop("_parsed_dt", None)
+            result.append(clean_tx)
     return json.dumps(result, ensure_ascii=False, indent=4)

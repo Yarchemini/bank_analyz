@@ -126,7 +126,7 @@ def _get_top_transactions(month_txs: List[Dict[str, Any]]) -> List[Dict[str, Any
             continue
 
     # Сортируем по абсолютному значению транзакции (чтобы крупные траты/пополнения вылетели вверх)
-    valid_txs.sort(key=lambda x: x, reverse=True)
+    valid_txs.sort(key=lambda x: x[0], reverse=True)
 
     top_transactions = []
     for _, orig_amount, tx in valid_txs[:5]:
