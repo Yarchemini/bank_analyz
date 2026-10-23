@@ -98,7 +98,7 @@ def spending_by_workday(transactions: pd.DataFrame, date: Optional[str] = None) 
     if filtered_df.empty:
         return pd.DataFrame(columns=["Тип дня", "Средняя сумма"])
 
-    filtered_df["Is_Weekend"] = filtered_df[date_col].dt.dayofweek.isin([5, 6])
+    filtered_df["Is_Weekend"] = filtered_df[date_col].dt.day_of_week.isin([5, 6])
     filtered_df["Day_Type"] = filtered_df["Is_Weekend"].map({True: "Выходной день", False: "Рабочий день"})
     filtered_df["Expense_Amount"] = filtered_df[amount_col].astype(float).abs()
 
