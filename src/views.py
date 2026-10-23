@@ -41,19 +41,34 @@ def fetch_currency_rates(currencies: List[str]) -> List[Dict[str, Any]]:
 
 
 def fetch_stock_prices(stocks: List[str]) -> List[Dict[str, Any]]:
-    """Получает стоимость акций из S&P500. В случае падения API возвращает дефолтные значения."""
+    """Получает реальную стоимость акций через API Alpha Vantage. В случае падения возвращает дефолтные значения."""
     stock_prices: List[Dict[str, Any]] = []
+    api_key = "YOUR_FREE_ALPHA_VANTAGE_KEY_HERE"  # Сюда можно вписать любой ключ, Alpha Vantage дает их бесплатно
+
+    # Дефолтные значения на случай падения сети или лимитов API
     mock_prices = {"AAPL": 180.50, "AMZN": 175.20, "GOOGL": 150.10, "MSFT": 420.30, "TSLA": 170.80}
 
-    try:
-        response = requests.get("https://httpbin.org", timeout=5)
-        response.raise_for_status()
-        for stock in stocks:
-            price = mock_prices.get(stock, 150.00)
+    for stock in stocks:
+        try:
+            url = f"https://alphavantage.co{stock}&apikey={api_key}"
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+
+            # Достаем цену из ответа API Alpha Vantage
+            global_quote = data.get("Global Quote", {})
+            price_str = global_quote.get("05. price")
+
+            if price_str:
+                stock_prices.append({"stock": stock, "price": round(float(price_str), 2)})
+            else:
+                # Если превышен лимит бесплатных запросов в минуту (5 запросов)
+                price = mock_prices.get(stock, 100.00)
+                stock_prices.append({"stock": stock, "price": float(price)})
+
+        except (requests.RequestException, ValueError, TypeError):
+            price = mock_prices.get(stock, 100.00)
             stock_prices.append({"stock": stock, "price": float(price)})
-    except requests.RequestException:
-        for stock in stocks:
-            stock_prices.append({"stock": stock, "price": 100.00})
 
     return stock_prices
 
@@ -120,7 +135,7 @@ def _get_top_transactions(month_txs: List[Dict[str, Any]]) -> List[Dict[str, Any
     for tx in month_txs:
         try:
             # Ищем строго по колонке 'Сумма платежа' по ТЗ
-            amount_val = float(tx.get("Сумма платежа") or tx.get("amount", 0))
+            amount_val = float(tx.get("Сумма операции") or tx.get("Сумма платежа") or tx.get("amount", 0))
             valid_txs.append((abs(amount_val), amount_val, tx))
         except (ValueError, TypeError):
             continue
